@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 import io
 
-st.set_page_config(page_title="ENAM PHONE PRO", page_icon="📱", layout="wide")
+st.set_page_config(page_title="MANAGEMENT PHONESHOP PRO by @Enam", page_icon="📱", layout="wide")
 
 # --- STYLE LUXE ---
 st.markdown("""
@@ -36,7 +36,7 @@ df = st.session_state.df
 # --- SIDEBAR CLIENT - FONCTION 1 ---
 with st.sidebar:
     st.title("⚙️ Config Boutique")
-    nom_boutique = st.text_input("Nom de votre boutique", "ENAM PHONE - Lomé")
+    nom_boutique = st.text_input("Nom de votre boutique", "MANAGEMENT PHONE SHOP - Lomé")
     logo = st.file_uploader("Logo de la boutique (PNG/JPG)", type=["png","jpg","jpeg"])
     st.divider()
     st.write("👨‍💻 Dev par ENAM")
