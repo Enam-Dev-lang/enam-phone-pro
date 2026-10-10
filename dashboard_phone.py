@@ -103,7 +103,7 @@ if filtre_statut!= "Tous":
     df_affiche = df_affiche[df_affiche["📦 Statut"] == filtre_statut]
 
 # --- HEADER ---
-st.markdown(f'<div class="header"><h1>📱 {boutique}</h1><p>💼 Dashboard qui fait gagner de l argent - Propulsé par ENAM</p></div>', unsafe_allow_html=True)
+st.markdown(f'<div class="header"><h1>📱 {boutique}</h1><p>💼 Dashboard qui fait gagner du temps et de l argent - Propulsé par ENAM</p></div>', unsafe_allow_html=True)
 st.write("")
 
 # --- KPIS AVEC EMOJIS ---
