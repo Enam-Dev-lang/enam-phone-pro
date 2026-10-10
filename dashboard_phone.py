@@ -156,8 +156,35 @@ with col2:
     else:
         st.info("Aucune vente encore")
 
-    if st.session_state.licence_active:
-        csv = st.session_state.df.to_csv(index=False).encode('utf-8')
-        st.download_button("📥 TÉLÉCHARGER LE RAPPORT PRO (avec Manager)", csv, "rapport_enam_manager.csv", "text/csv", type="primary", use_container_width=True)
-    else:
-        st.warning("🔒 Active ta licence pour télécharger - Flooz/TMoney")
+    st.divider()
+    st.subheader("📤 Exporter & Télécharger")
+    col_exp1, col_exp2 = st.columns(2)
+    
+    with col_exp1:
+        # CSV pour licence active
+        if st.session_state.licence_active:
+            csv = st.session_state.df.to_csv(index=False).encode('utf-8')
+            st.download_button("📥 TÉLÉCHARGER CSV PRO", csv, "rapport_enam_manager.csv", "text/csv", type="primary", use_container_width=True)
+        else:
+            st.warning("🔒 Active ta licence pour CSV - Flooz/TMoney")
+    
+    with col_exp2:
+        # EXCEL - TOUJOURS DISPO MEME SANS LICENCE (ou avec licence si tu veux bloquer, change)
+        import io
+        output = io.BytesIO()
+        # On crée un Excel avec 2 feuilles
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            st.session_state.df.to_excel(writer, index=False, sheet_name='📦 Stock Complet')
+            df_affiche.to_excel(writer, index=False, sheet_name='🔍 Stock Filtré')
+            if st.session_state.historique_ventes:
+                pd.DataFrame(st.session_state.historique_ventes).to_excel(writer, index=False, sheet_name='📜 Historique Ventes')
+        
+        st.download_button(
+            label="📊 TÉLÉCHARGER FEUILLE EXCEL (Stock + Filtre + Ventes)",
+            data=output.getvalue(),
+            file_name=f"MANAGEMENT_PHONE_SHOP_BY_ENAM_{datetime.now().strftime('%d-%m-%Y')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            type="secondary",
+            use_container_width=True
+        )
+        st.caption("✅ Excel contient 3 onglets: Stock Complet, Stock Filtré, Historique Ventes avec Manager")
