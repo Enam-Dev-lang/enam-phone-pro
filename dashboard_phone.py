@@ -6,7 +6,7 @@ import hashlib
 import io
 
 st.set_page_config(page_title="MANAGEMENT PHONE SHOP BY ENAM", layout="wide", page_icon="📱")
-st.page_link("pages/Abonnement.py" label="💳 S'Abonner - 5000FCFA/MOIS", icon="🔥")
+st.page_link("pages/Abonnement.py", label="💳 S'Abonner - 5000FCFA/MOIS", icon="🔥")
 st.divider()
 FLOOZ = "+228 97 04 42 09"
 TMONEY = "+228 91 29 63 08"
