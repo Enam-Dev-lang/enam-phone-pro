@@ -6,7 +6,7 @@ import hashlib
 import io
 
 st.set_page_config(page_title="MANAGEMENT PHONE SHOP BY ENAM", layout="wide", page_icon="📱")
-st.link_button("💳S'ABONNER - 5000FCFA/MOIS", "https://enam-phone-pro-xscapju7vufnpdztqk6r8w.streamlit.app/Abonnement",use_container_width=Tue)
+st.link_button("💳 S'ABONNER - 5000FCFA/MOIS", "Abonnement",use_container_width=True)
 st.divider()
 FLOOZ = "+228 97 04 42 09"
 TMONEY = "+228 91 29 63 08"
