@@ -1,35 +1,78 @@
 import streamlit as st
-st.set_page_config(page_title="Abonnement", layout="wide")
+st.set_page_config(page_title="Abonnement ENAM", layout="wide")
 
 st.markdown("""
 <style>
-.box
-  box {background: linear-gradient(135deg,#6a5af9,#a46bff); 
-  padding:30px;
-  border-radius:18px; 
-  color:white; 
-  text-align:center;
-  }
-.card {
-  background:white; 
-  border-radius:16px; 
-  padding:22px; 
-  border:1px solid #eee; 
-  box-shadow:0 6px 20px rgba(0,0,0,0.07);
-  }
-.price {
-  font-size:36px; 
-  font-weight:900;
-  }
+    .header {
+        background: linear-gradient(90deg, #6a5af9 0%, #a46bff 100%);
+        padding: 35px;
+        border-radius: 18px;
+        color: white;
+        text-align: center;
+        margin-bottom: 25px;
+    }
+    .header h1 { color: white !important; margin:0; }
+    .card {
+        background: white;
+        border: 1px solid #e9e9e9;
+        border-radius: 16px;
+        padding: 22px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+        height: 420px;
+    }
+    .card-popular {
+        border: 2.5px solid #6a5af9 !important;
+    }
+    .price { font-size: 34px; font-weight: 900; color: #111; }
+    .badge { background: #6a5af9; color: white; padding: 4px 10px; border-radius: 20px; font-size: 12px; }
 </style>
-<div class="box"><h1>💎 ENAM PHONE PRO</h1><p>Dashboard qui te fait gagner temps & argent à Lomé</p></div><br>
+
+<div class="header">
+    <h1>💎 ENAM PHONE PRO</h1>
+    <p>Tableau de bord qui te fait gagner temps & argent à Lomé</p>
+</div>
 """, unsafe_allow_html=True)
 
-a,b,c = st.columns(3)
-with a: st.markdown('<div class="card"><h3>🌱 GRATUIT</h3><div class="price">0 F</div>3 jours<br><br>✅ Stock illimité<br>✅ Bénéfice auto<br><br></div>', unsafe_allow_html=True)
-with b: st.markdown('<div class="card" style="border:2.5px solid #6a5af9;"><h3>🔥 MENSUEL ⭐</h3><div class="price">5 000 F</div>/ mois<br><p style="color:#6a5af9;font-weight:700;">166F / jour</p><hr>🚀 Illimité<br>💰 Bénéfice auto<br>💬 Support WhatsApp<br><br><b>LE PLUS CHOISI</b></div>', unsafe_allow_html=True)
-with c: st.markdown('<div class="card"><h3>👑 ANNUEL</h3><div class="price">50 000 F</div>/ an<br><p style="color:green;font-weight:700;">2 mois offerts</p><hr>👑 Tout + Formation<br>🏆 Groupe VIP<br><br><b>Économise 10 000F</b></div>', unsafe_allow_html=True)
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.markdown("""
+    <div class="card">
+        <h3>🌱 GRATUIT</h3>
+        <div class="price">0 F</div>
+        <small>3 jours d'essai</small><br><br>
+        ✅ Stock illimité<br>
+        ✅ Bénéfice auto<br><br><br>
+        <b>Pour tester</b>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col2:
+    st.markdown("""
+    <div class="card card-popular">
+        <h3>🔥 MENSUEL <span class="badge">⭐ POPULAIRE</span></h3>
+        <div class="price">5 000 F</div>
+        <small>/ mois - <b style="color:#6a5af9;">166F / jour</b></small><br><br>
+        🚀 Stock Illimité<br>
+        💰 Bénéfice auto<br>
+        💬 Support WhatsApp<br><br>
+        <b style="color:#6a5af9;">LE PLUS CHOISI</b>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col3:
+    st.markdown("""
+    <div class="card">
+        <h3>👑 ANNUEL</h3>
+        <div class="price">50 000 F</div>
+        <small>/ an - <b style="color:green;">2 mois offerts</b></small><br><br>
+        👑 Tout illimité<br>
+        🎓 Formation incluse<br>
+        🏆 Groupe VIP<br><br>
+        <b>Économisez 10 000F</b>
+    </div>
+    """, unsafe_allow_html=True)
 
 st.write("")
-st.markdown('<div style="background:#f0f7ff; border-left:5px solid #2b7cff; padding:18px; border-radius:12px;"><b>💳 PAIEMENT</b><br><br>🟡 FLOOZ / MIXX: <b>97 04 42 09</b> (ENAM LANG) | 🔵 T-MONEY: <b>91 29 63 08</b></div>', unsafe_allow_html=True)
+st.info("💳 **PAIEMENT** - FLOOZ / MIXX: **97 04 42 09** (ENAM LANG) | T-MONEY: **91 29 63 08**")
 st.link_button("📲 ENVOYER PREUVE WHATSAPP - ACTIVATION 5 MIN", "https://wa.me/22897044209", type="primary", use_container_width=True)
