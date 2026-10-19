@@ -59,7 +59,7 @@ with col3:
 st.write("")
 
 # --- MODIFICATION 1 : Numéro de paiement ---
-st.info("💳 **PAIEMENT** - FLOOZ / MIXX(T-money) / FLOOZ: MIX: **91 29 63 08(ENAM KOSSIVI)** | FLOOZ: **97 04 42 09(ENAM KOSSIVI)**")
+st.info("💳 **PAIEMENT** - FLOOZ / MIXX(T-money) : MIXX: **91 29 63 08(ENAM KOSSIVI)** | FLOOZ: **97 04 42 09(ENAM KOSSIVI)**")
 
 # --- MODIFICATION 2 : Numéro WhatsApp qui reçoit les captures ---
 st.link_button("📲 ENVOYER PREUVE WHATSAPP - ACTIVATION 5 MIN", "https://wa.me/22891296308", type="primary", use_container_width=True)
