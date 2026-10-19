@@ -1,5 +1,5 @@
 streamlit
 pandas
 plotly
-openpyxl
-fdpf2
+openpyx
+fpdf2
