@@ -16,6 +16,19 @@ PRIX_AN = 50000
 FICHIER_STOCK = "stock.xlsx"
 FICHIER_HISTORIQUE = "historique_ventes.xlsx"
 
+import json
+
+def check_activation():
+    if not os.path.exists("activation.json"):
+        return False
+    try:
+        with open("activation.json","r") as f:
+            return "cle" in json.load(f)
+    except:
+        return False
+
+ACTIVATED = check_activation()
+
 st.markdown("""
 <style>
 .header { background: linear-gradient(90deg, #0A1931 0%, #185ADB 100%); padding:20px; border-radius:15px; color:white; text-align:center; }
@@ -226,4 +239,41 @@ with col2:
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=True
         )
+    st.divider()
+st.subheader("🛠️ Correction / Reset")
+
+# --- SUPPRIMER UN SEUL IMEI ---
+if not st.session_state.df.empty:
+    imei_a_suppr = st.selectbox("Choisir IMEI à corriger / supprimer", st.session_state.df["IMEI"].astype(str).tolist())
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🗑️ Supprimer ce téléphone"):
+            st.session_state.df = st.session_state.df[st.session_state.df["IMEI"].astype(str) != str(imei_a_suppr)]
+            save_stock_excel()
+            st.success(f"{imei_a_suppr} supprimé")
+            st.rerun()
+    with col2:
+        if st.button("✏️ Vider le champ (pour re-saisir)"):
+            st.session_state.df = st.session_state.df[st.session_state.df["IMEI"].astype(str) != str(imei_a_suppr)]
+            save_stock_excel()
+            st.info("Supprimé, tu peux le re-ajouter correctement en haut")
+
+# --- RESET TOTAL ---
+st.markdown("---")
+if not ACTIVATED:
+    st.warning("🔒 Version non activée : limitée à 3 téléphones. Va dans Menu > Activation")
+else:
+    st.success("✅ Version Pro Activée")
+
+if st.button("⚠️ RESET TOTAL - Tout effacer", type="secondary"):
+    if st.checkbox("Je confirme vouloir TOUT effacer"):
+        try:
+            os.remove(FICHIER_STOCK)
+            os.remove("historique_ventes.xlsx")
+        except: pass
+        st.session_state.df = pd.DataFrame()
+        st.session_state.historique_ventes = []
+        st.success("Tout est remis à zéro")
+        st.rerun()
+
     st.caption("✅ Excel contient 3 onglets: Stock Complet, Stock Filtré, Historique Ventes avec Manager")
