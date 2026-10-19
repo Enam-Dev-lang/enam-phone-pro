@@ -29,8 +29,16 @@ def fcfa(x): return f"{x:,.0f} FCFA".replace(",", " ")
 
 def save_stock_excel():
     try:
-        st.session_state.df.to_excel(FICHIER_STOCK, index=False)
+        df_save = st.session_state.df.copy()
+        df_save["IMEI"] = df_save ["IMEI"].astype(str)
+        df_save.to_excel(FICHIER_STOCK, index=False)
     except: pass
+
+def load_stock_excel():
+    try:
+        return pd.read_excel(FICHIER_STOCK, dtype={"IMEI": str})
+    except:
+        return None
 
 def save_historique_excel():
     try:
