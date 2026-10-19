@@ -5,7 +5,7 @@ from fpdf import FPDF
 from datetime import datetime
 
 st.set_page_config(page_title="Rapport PDF", layout="wide")
-st.title("📄 Rapport PDF - ENAM KOSSIVI")
+st.title("📄 Rapport")
 
 # --- CETTE PARTIE CHERCHE TES DONNEES TOUTE SEULE ---
 df = None
