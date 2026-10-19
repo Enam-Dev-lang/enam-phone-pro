@@ -4,6 +4,7 @@ import plotly.express as px
 from datetime import datetime
 import hashlib
 import io
+import os
 
 st.set_page_config(page_title="MANAGEMENT PHONE SHOP BY ENAM", layout="wide", page_icon="📱")
 st.link_button("💳 S'ABONNER - 5000FCFA/MOIS", "Abonnement",use_container_width=True)
@@ -12,6 +13,8 @@ FLOOZ = "+228 97 04 42 09"
 TMONEY = "+228 91 29 63 08"
 PRIX_MOIS = 5000
 PRIX_AN = 50000
+FICHIER_STOCK = "stock.xlsx"
+FICHIER_HISTORIQUE = "historique_ventes.xlsx"
 
 st.markdown("""
 <style>
@@ -24,22 +27,59 @@ st.markdown("""
 
 def fcfa(x): return f"{x:,.0f} FCFA".replace(",", " ")
 
-# --- DONNEES DE BASE AVEC MANAGER ---
+def save_stock_excel():
+    try:
+        st.session_state.df.to_excel(FICHIER_STOCK, index=False)
+    except: pass
+
+def save_historique_excel():
+    try:
+        if st.session_state.historique_ventes:
+            pd.DataFrame(st.session_state.historique_ventes).to_excel(FICHIER_HISTORIQUE, index=False)
+    except: pass
+
+# --- DONNEES DE BASE AVEC MANAGER - SYNCHRONISE ---
 if "df" not in st.session_state:
-    data = {
-        "IMEI": ["356789101234567", "358923456789012", "351112334455667", "359001122334455"],
-        "Modèle": ["Tecno Spark 20", "Infinix Hot 40", "iPhone 14", "Tecno Pop 8"],
-        "Marque": ["Tecno", "Infinix", "iPhone", "Tecno"],
-        "Prix Achat (FCFA)": [68000,72000,420000,45000],
-        "Prix de vente (FCFA)": [85000,92000,525000,58000],
-        "👤 Manager / Vendeur": ["ENAM", "Koffi", "ENAM", "Koffi"],
-        "📦 Statut": ["En Stock", "En Stock", "En Stock", "En Stock"]
-    }
-    st.session_state.df = pd.DataFrame(data)
-    st.session_state.df["💰 Profit"] = st.session_state.df["Prix de vente (FCFA)"] - st.session_state.df["Prix Achat (FCFA)"]
+    if os.path.exists(FICHIER_STOCK):
+        try:
+            st.session_state.df = pd.read_excel(FICHIER_STOCK)
+            if "💰 Profit" not in st.session_state.df.columns:
+                st.session_state.df["💰 Profit"] = st.session_state.df["Prix de vente (FCFA)"] - st.session_state.df["Prix Achat (FCFA)"]
+        except:
+            data = {
+                "IMEI": ["356789101234567", "358923456789012", "351112334455667", "359001122334455"],
+                "Modèle": ["Tecno Spark 20", "Infinix Hot 40", "iPhone 14", "Tecno Pop 8"],
+                "Marque": ["Tecno", "Infinix", "iPhone", "Tecno"],
+                "Prix Achat (FCFA)": [68000,72000,420000,45000],
+                "Prix de vente (FCFA)": [85000,92000,525000,58000],
+                "👤 Manager / Vendeur": ["ENAM", "Koffi", "ENAM", "Koffi"],
+                "📦 Statut": ["En Stock", "En Stock", "En Stock", "En Stock"]
+            }
+            st.session_state.df = pd.DataFrame(data)
+            st.session_state.df["💰 Profit"] = st.session_state.df["Prix de vente (FCFA)"] - st.session_state.df["Prix Achat (FCFA)"]
+    else:
+        data = {
+            "IMEI": ["356789101234567", "358923456789012", "351112334455667", "359001122334455"],
+            "Modèle": ["Tecno Spark 20", "Infinix Hot 40", "iPhone 14", "Tecno Pop 8"],
+            "Marque": ["Tecno", "Infinix", "iPhone", "Tecno"],
+            "Prix Achat (FCFA)": [68000,72000,420000,45000],
+            "Prix de vente (FCFA)": [85000,92000,525000,58000],
+            "👤 Manager / Vendeur": ["ENAM", "Koffi", "ENAM", "Koffi"],
+            "📦 Statut": ["En Stock", "En Stock", "En Stock", "En Stock"]
+        }
+        st.session_state.df = pd.DataFrame(data)
+        st.session_state.df["💰 Profit"] = st.session_state.df["Prix de vente (FCFA)"] - st.session_state.df["Prix Achat (FCFA)"]
+        save_stock_excel()
 
 if "historique_ventes" not in st.session_state:
-    st.session_state.historique_ventes = []
+    if os.path.exists(FICHIER_HISTORIQUE):
+        try:
+            st.session_state.historique_ventes = pd.read_excel(FICHIER_HISTORIQUE).to_dict(orient="records")
+        except:
+            st.session_state.historique_ventes = []
+    else:
+        st.session_state.historique_ventes = []
+
 if "licence_active" not in st.session_state:
     st.session_state.licence_active = False
 
@@ -48,13 +88,11 @@ with st.sidebar:
     st.header("⚙️ Config Boutique")
     boutique = st.text_input("🏪 Nom de votre boutique", "MANAGEMENT PHONE SHOP - Lomé")
     st.file_uploader("🖼️ Logo de la boutique (PNG/JPG)", type=["png","jpg","jpeg"])
-
     st.divider()
     st.markdown("### 🔍 Filtrer le Stock")
     marques = ["Toutes"] + list(st.session_state.df["Marque"].unique())
     filtre_marque = st.selectbox("🏷️ Filtrer par marque", marques)
     filtre_statut = st.selectbox("📦 Filtrer par statut", ["Tous", "En Stock", "Vendu"])
-
     st.divider()
     st.markdown("### ➕ Ajouter un Téléphone")
     with st.form("ajout_phone", clear_on_submit=True):
@@ -67,12 +105,12 @@ with st.sidebar:
         submitted = st.form_submit_button("✅ Ajouter au Stock")
         if submitted:
             if imei and modele and manager_ajout:
-                new_row = {"IMEI": imei, "Modèle": modele, "Marque": marque, "Prix Achat (FCFA)": prix_achat, "Prix de vente (FCFA)": prix_vente, "👤 Manager / Vendeur": manager_ajout, "📦 Statut": "En Stock", "💰 Profit": prix_vente-prix_achat}
+                new_row = {"IMEI": imei, "Modèle": modele, "Marque": marque, "Prix Achat (FCFA)": prix_achat, "Prix de vente (FCFA)": prix_vente, "👤 Manager / Vendeur": manager_ajout, "📦 Statut": "En Stock", "💰 Profit": prix_vente-prix_achat, "date": datetime.now()}
                 st.session_state.df = pd.concat([st.session_state.df, pd.DataFrame([new_row])], ignore_index=True)
-                st.success(f"📱 {modele} ajouté par {manager_ajout}!")
+                save_stock_excel()
+                st.success(f"📱 {modele} ajouté par {manager_ajout}! Synchronisé dans stock.xlsx")
             else:
                 st.error("❌ Remplis IMEI, Modèle et Manager")
-
     st.divider()
     st.markdown("### 🔒 Licence PRO")
     if not st.session_state.licence_active:
@@ -94,7 +132,6 @@ with st.sidebar:
         if st.button("🔓 Déconnecter"):
             st.session_state.licence_active = False
             st.rerun()
-
     st.divider()
     st.caption(f"👨‍💻 Dev par ENAM\n📲 Flooz: {FLOOZ}\n📲 TMoney: {TMONEY}")
 
@@ -111,36 +148,33 @@ st.write("")
 
 # --- KPIs ---
 c1,c2,c3,c4 = st.columns(4)
-with c1: st.markdown(f'<div class="kpi-card"><div class="kpi-label">📦 Appareils Filtrés</div><div class="kpi-value">{len(df_affiche)}</div></div>', unsafe_allow_html=True)
-with c2: st.markdown(f'<div class="kpi-card"><div class="kpi-label">💼 Valeur Stock</div><div class="kpi-value">{fcfa(df_affiche[df_affiche["📦 Statut"]=="En Stock"]["Prix Achat (FCFA)"].sum())}</div></div>', unsafe_allow_html=True)
-with c3: st.markdown(f'<div class="kpi-card"><div class="kpi-label">📈 Profit Total</div><div class="kpi-value">{fcfa(df_affiche["💰 Profit"].sum())}</div></div>', unsafe_allow_html=True)
+with c1:
+    st.markdown(f'<div class="kpi-card"><div class="kpi-label">📦 Appareils Filtrés</div><div class="kpi-value">{len(df_affiche)}</div></div>', unsafe_allow_html=True)
+with c2:
+    st.markdown(f'<div class="kpi-card"><div class="kpi-label">💼 Valeur Stock</div><div class="kpi-value">{fcfa(df_affiche[df_affiche["📦 Statut"]=="En Stock"]["Prix Achat (FCFA)"].sum())}</div></div>', unsafe_allow_html=True)
+with c3:
+    st.markdown(f'<div class="kpi-card"><div class="kpi-label">📈 Profit Total</div><div class="kpi-value">{fcfa(df_affiche["💰 Profit"].sum())}</div></div>', unsafe_allow_html=True)
 with c4:
     star = df_affiche.groupby("Marque")["💰 Profit"].sum().idxmax() if len(df_affiche)>0 else "-"
     st.markdown(f'<div class="kpi-card"><div class="kpi-label">🔥 Marque Star</div><div class="kpi-value">{star}</div></div>', unsafe_allow_html=True)
-
 st.write("")
 col1, col2 = st.columns([1,2])
-
 with col1:
     st.subheader("💎 Profit par marque")
     if len(df_affiche)>0:
         fig = px.bar(df_affiche.groupby("Marque")["💰 Profit"].sum().reset_index(), x="Marque", y="💰 Profit", color="Marque")
         st.plotly_chart(fig, use_container_width=True)
-
     st.subheader("👥 Performance par Manager")
     if len(df_affiche)>0:
         fig2 = px.pie(df_affiche.groupby("👤 Manager / Vendeur")["💰 Profit"].sum().reset_index(), values="💰 Profit", names="👤 Manager / Vendeur", hole=0.4)
         st.plotly_chart(fig2, use_container_width=True)
-
     st.subheader("💰 Simulateur rapide")
     achat = st.number_input("💸 Prix Achat Test", value=68000, step=1000)
     vente = st.number_input("💵 Prix Vente Test", value=85000, step=1000)
     st.success(f"✅ Bénéfice: {fcfa(vente-achat)}")
-
 with col2:
     st.subheader("📋 Stock en temps réel (avec Manager)")
     st.dataframe(df_affiche, use_container_width=True)
-
     st.subheader("💸 Vendre un téléphone")
     stock_dispo = df_affiche[df_affiche["📦 Statut"]=="En Stock"]
     if len(stock_dispo)>0:
@@ -152,15 +186,15 @@ with col2:
             if vendeur:
                 st.session_state.df.at[idx, "👤 Manager / Vendeur"] = vendeur
             st.session_state.historique_ventes.append({"IMEI": phone_a_vendre, "👤 Vendeur": vendeur if vendeur else "Non défini", "📅 Date": datetime.now().strftime("%d/%m %H:%M")})
-            st.success(f"🎉 Vendu par {vendeur}!")
+            save_stock_excel()
+            save_historique_excel()
+            st.success(f"🎉 Vendu par {vendeur}! Synchronisé dans stock.xlsx")
             st.rerun()
-
     st.subheader("📜 Historique des ventes")
     if st.session_state.historique_ventes:
         st.table(pd.DataFrame(st.session_state.historique_ventes))
     else:
         st.info("Aucune vente encore")
-
     st.divider()
     st.subheader("📤 Exporter & Télécharger")
     col_exp1, col_exp2 = st.columns(2)
@@ -170,7 +204,6 @@ with col2:
             st.download_button("📥 TÉLÉCHARGER CSV PRO", csv, "rapport_enam_manager.csv", "text/csv", type="primary", use_container_width=True)
         else:
             st.warning("🔒 Active ta licence pour CSV")
-
     with col_exp2:
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
@@ -185,4 +218,4 @@ with col2:
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=True
         )
-        st.caption("✅ Excel contient 3 onglets: Stock Complet, Stock Filtré, Historique Ventes avec Manager")
+    st.caption("✅ Excel contient 3 onglets: Stock Complet, Stock Filtré, Historique Ventes avec Manager")
