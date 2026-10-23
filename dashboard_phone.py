@@ -5,10 +5,37 @@ from datetime import datetime
 import hashlib
 import io
 import os
+import json
 
-st.set_page_config(page_title="MANAGEMENT PHONE SHOP BY ENAM", layout="wide", page_icon="📱")
-st.link_button("💳 S'ABONNER - 5000FCFA/MOIS", "Abonnement",use_container_width=True)
-st.divider()
+# ==========================================
+# 1. PERSISTANCE NOM BOUTIQUE - FIX CTRL+F5
+# ==========================================
+SHOP_CONFIG = "shop_config.json"
+
+def load_shop_name():
+    if os.path.exists(SHOP_CONFIG):
+        try:
+            with open(SHOP_CONFIG, "r", encoding="utf-8") as f:
+                return json.load(f).get("shop_name", "ENAM PHONE PRO")
+        except:
+            return "ENAM PHONE PRO"
+    return "ENAM PHONE PRO"
+
+def save_shop_name(name):
+    try:
+        with open(SHOP_CONFIG, "w", encoding="utf-8") as f:
+            json.dump({"shop_name": name}, f, ensure_ascii=False, indent=2)
+    except:
+        pass
+
+SHOP_NAME_DEFAULT = load_shop_name()
+
+# Config page doit être la première commande Streamlit
+st.set_page_config(page_title=SHOP_NAME_DEFAULT, layout="wide", page_icon="📱")
+
+# ==========================================
+# 2. CONSTANTES
+# ==========================================
 FLOOZ = "+228 97 04 42 09"
 TMONEY = "+228 91 29 63 08"
 PRIX_MOIS = 5000
@@ -16,19 +43,20 @@ PRIX_AN = 50000
 FICHIER_STOCK = "stock.xlsx"
 FICHIER_HISTORIQUE = "historique_ventes.xlsx"
 
-import json
-
 def check_activation():
     if not os.path.exists("activation.json"):
         return False
     try:
-        with open("activation.json","r") as f:
+        with open("activation.json", "r") as f:
             return "cle" in json.load(f)
     except:
         return False
 
 ACTIVATED = check_activation()
 
+# ==========================================
+# 3. STYLE
+# ==========================================
 st.markdown("""
 <style>
 .header { background: linear-gradient(90deg, #0A1931 0%, #185ADB 100%); padding:20px; border-radius:15px; color:white; text-align:center; }
@@ -38,14 +66,16 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-def fcfa(x): return f"{x:,.0f} FCFA".replace(",", " ")
+def fcfa(x):
+    return f"{x:,.0f} FCFA".replace(",", " ")
 
 def save_stock_excel():
     try:
         df_save = st.session_state.df.copy()
-        df_save["IMEI"] = df_save ["IMEI"].astype(str)
+        df_save["IMEI"] = df_save["IMEI"].astype(str)
         df_save.to_excel(FICHIER_STOCK, index=False)
-    except: pass
+    except:
+        pass
 
 def load_stock_excel():
     try:
@@ -57,9 +87,12 @@ def save_historique_excel():
     try:
         if st.session_state.historique_ventes:
             pd.DataFrame(st.session_state.historique_ventes).to_excel(FICHIER_HISTORIQUE, index=False)
-    except: pass
+    except:
+        pass
 
-# --- DONNEES DE BASE AVEC MANAGER - SYNCHRONISE ---
+# ==========================================
+# 4. DONNEES DE BASE
+# ==========================================
 if "df" not in st.session_state:
     if os.path.exists(FICHIER_STOCK):
         try:
@@ -90,7 +123,7 @@ if "df" not in st.session_state:
         }
         st.session_state.df = pd.DataFrame(data)
         st.session_state.df["💰 Profit"] = st.session_state.df["Prix de vente (FCFA)"] - st.session_state.df["Prix Achat (FCFA)"]
-        save_stock_excel()
+    save_stock_excel()
 
 if "historique_ventes" not in st.session_state:
     if os.path.exists(FICHIER_HISTORIQUE):
@@ -104,10 +137,17 @@ if "historique_ventes" not in st.session_state:
 if "licence_active" not in st.session_state:
     st.session_state.licence_active = False
 
-# --- SIDEBAR ---
+# ==========================================
+# 5. SIDEBAR
+# ==========================================
 with st.sidebar:
     st.header("⚙️ Config Boutique")
-    boutique = st.text_input("🏪 Nom de votre boutique", "MANAGEMENT PHONE SHOP - Lomé")
+    boutique = st.text_input("🏪 Nom de votre boutique", value=SHOP_NAME_DEFAULT)
+    
+    # Sauvegarde persistante - FIX CTRL+F5
+    if boutique and boutique != SHOP_NAME_DEFAULT:
+        save_shop_name(boutique)
+    
     st.file_uploader("🖼️ Logo de la boutique (PNG/JPG)", type=["png","jpg","jpeg"])
     st.divider()
     st.markdown("### 🔍 Filtrer le Stock")
@@ -126,7 +166,7 @@ with st.sidebar:
         submitted = st.form_submit_button("✅ Ajouter au Stock")
         if submitted:
             if imei and modele and manager_ajout:
-                new_row = {"IMEI": imei, "Modèle": modele, "Marque": marque, "Prix Achat (FCFA)": prix_achat, "Prix de vente (FCFA)": prix_vente, "👤 Manager / Vendeur": manager_ajout, "📦 Statut": "En Stock", "💰 Profit": prix_vente-prix_achat, "date": datetime.now()}
+                new_row = {"IMEI": imei, "Modèle": modele, "Marque": marque, "Prix Achat (FCFA)": prix_achat, "Prix de vente (FCFA)": prix_vente, "👤 Manager / Vendeur": manager_ajout, "📦 Statut": "En Stock", "💰 Profit": prix_vente-prix_achat}
                 st.session_state.df = pd.concat([st.session_state.df, pd.DataFrame([new_row])], ignore_index=True)
                 save_stock_excel()
                 st.success(f"📱 {modele} ajouté par {manager_ajout}! Synchronisé dans stock.xlsx")
@@ -156,18 +196,26 @@ with st.sidebar:
     st.divider()
     st.caption(f"👨‍💻 Dev par ENAM\n📲 Flooz: {FLOOZ}\n📲 TMoney: {TMONEY}")
 
-# --- FILTRAGE ---
+# ==========================================
+# 6. FILTRAGE
+# ==========================================
 df_affiche = st.session_state.df.copy()
-if filtre_marque!= "Toutes":
+if filtre_marque != "Toutes":
     df_affiche = df_affiche[df_affiche["Marque"] == filtre_marque]
-if filtre_statut!= "Tous":
+if filtre_statut != "Tous":
     df_affiche = df_affiche[df_affiche["📦 Statut"] == filtre_statut]
 
-# --- HEADER - TA PHRASE EXACTE GARDÉE ---
+# ==========================================
+# 7. HEADER
+# ==========================================
+st.link_button("💳 S'ABONNER - 5000FCFA/MOIS", "Abonnement", use_container_width=True)
+st.divider()
 st.markdown(f'<div class="header"><h1>📱 {boutique}</h1><p>Dashboard qui fait gagner du temps et de l argent - Propulsé par Enam</p></div>', unsafe_allow_html=True)
 st.write("")
 
-# --- KPIs ---
+# ==========================================
+# 8. KPIs
+# ==========================================
 c1,c2,c3,c4 = st.columns(4)
 with c1:
     st.markdown(f'<div class="kpi-card"><div class="kpi-label">📦 Appareils Filtrés</div><div class="kpi-value">{len(df_affiche)}</div></div>', unsafe_allow_html=True)
@@ -178,6 +226,7 @@ with c3:
 with c4:
     star = df_affiche.groupby("Marque")["💰 Profit"].sum().idxmax() if len(df_affiche)>0 else "-"
     st.markdown(f'<div class="kpi-card"><div class="kpi-label">🔥 Marque Star</div><div class="kpi-value">{star}</div></div>', unsafe_allow_html=True)
+
 st.write("")
 col1, col2 = st.columns([1,2])
 with col1:
@@ -193,6 +242,7 @@ with col1:
     achat = st.number_input("💸 Prix Achat Test", value=68000, step=1000)
     vente = st.number_input("💵 Prix Vente Test", value=85000, step=1000)
     st.success(f"✅ Bénéfice: {fcfa(vente-achat)}")
+
 with col2:
     st.subheader("📋 Stock en temps réel (avec Manager)")
     st.dataframe(df_affiche, use_container_width=True)
@@ -235,45 +285,40 @@ with col2:
         st.download_button(
             label="📊 TÉLÉCHARGER FEUILLE EXCEL (Stock + Filtre + Ventes)",
             data=output.getvalue(),
-            file_name=f"MANAGEMENT_PHONE_SHOP_BY_ENAM_{datetime.now().strftime('%d-%m-%Y')}.xlsx",
+            file_name=f"ENAM_PHONE_PRO_BY_ENAM_{datetime.now().strftime('%d-%m-%Y')}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=True
         )
     st.divider()
-st.subheader("🛠️ Correction / Reset")
-
-# --- SUPPRIMER UN SEUL IMEI ---
-if not st.session_state.df.empty:
-    imei_a_suppr = st.selectbox("Choisir IMEI à corriger / supprimer", st.session_state.df["IMEI"].astype(str).tolist())
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("🗑️ Supprimer ce téléphone"):
-            st.session_state.df = st.session_state.df[st.session_state.df["IMEI"].astype(str) != str(imei_a_suppr)]
-            save_stock_excel()
-            st.success(f"{imei_a_suppr} supprimé")
+    st.subheader("🛠️ Correction / Reset")
+    if not st.session_state.df.empty:
+        imei_a_suppr = st.selectbox("Choisir IMEI à corriger / supprimer", st.session_state.df["IMEI"].astype(str).tolist())
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button("🗑️ Supprimer ce téléphone"):
+                st.session_state.df = st.session_state.df[st.session_state.df["IMEI"].astype(str) != str(imei_a_suppr)]
+                save_stock_excel()
+                st.success(f"{imei_a_suppr} supprimé")
+                st.rerun()
+        with c2:
+            if st.button("✏️ Vider le champ (pour re-saisir)"):
+                st.session_state.df = st.session_state.df[st.session_state.df["IMEI"].astype(str) != str(imei_a_suppr)]
+                save_stock_excel()
+                st.info("Supprimé, tu peux le re-ajouter correctement en haut")
+    st.markdown("---")
+    if not ACTIVATED:
+        st.warning("🔒 Version non activée : limitée à 3 téléphones. Va dans Menu > Activation")
+    else:
+        st.success("✅ Version Pro Activée")
+    if st.button("⚠️ RESET TOTAL - Tout effacer", type="secondary"):
+        if st.checkbox("Je confirme vouloir TOUT effacer"):
+            try:
+                os.remove(FICHIER_STOCK)
+                os.remove("historique_ventes.xlsx")
+            except:
+                pass
+            st.session_state.df = pd.DataFrame()
+            st.session_state.historique_ventes = []
+            st.success("Tout est remis à zéro")
             st.rerun()
-    with col2:
-        if st.button("✏️ Vider le champ (pour re-saisir)"):
-            st.session_state.df = st.session_state.df[st.session_state.df["IMEI"].astype(str) != str(imei_a_suppr)]
-            save_stock_excel()
-            st.info("Supprimé, tu peux le re-ajouter correctement en haut")
-
-# --- RESET TOTAL ---
-st.markdown("---")
-if not ACTIVATED:
-    st.warning("🔒 Version non activée : limitée à 3 téléphones. Va dans Menu > Activation")
-else:
-    st.success("✅ Version Pro Activée")
-
-if st.button("⚠️ RESET TOTAL - Tout effacer", type="secondary"):
-    if st.checkbox("Je confirme vouloir TOUT effacer"):
-        try:
-            os.remove(FICHIER_STOCK)
-            os.remove("historique_ventes.xlsx")
-        except: pass
-        st.session_state.df = pd.DataFrame()
-        st.session_state.historique_ventes = []
-        st.success("Tout est remis à zéro")
-        st.rerun()
-
     st.caption("✅ Excel contient 3 onglets: Stock Complet, Stock Filtré, Historique Ventes avec Manager")
