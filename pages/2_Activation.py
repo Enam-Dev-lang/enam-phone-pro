@@ -1,25 +1,33 @@
-# pages/Activation.py - CLÉ À USAGE UNIQUE + CODES MANAGERS
-import streamlit as st, os, json, pandas as pd, random, string
+import streamlit as st, os, json, pandas as pd, random, string, platform, hashlib, uuid
 from datetime import datetime
-st.set_page_config(page_title="Activation", page_icon="🔑", layout="wide")
+
+def get_machine_id():
+    raw = platform.node() + str(uuid.getnode())
+    return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
 LICENCE_FILE = "licence.json"
-KEYS_FILE = "keys_database.json" # Base des clés générées par toi
+KEYS_FILE = "keys_database.json"
 STOCK_FILE = "stock.xlsx"
 CAISSE_FILE = "caisse_journal.json"
 CODE_FILE = "manager_codes.json"
 
-# Tes clés MASTER réutilisables pour TOI SEUL
 MASTER_KEYS = ["ENAM-MASTER-2026", "ENAM-ADMIN", "DEMO-2026"]
 
 def is_activated():
-    if os.path.exists(LICENCE_FILE):
-        try:
-            with open(LICENCE_FILE, "r") as f:
-                return json.load(f).get("active", False)
-        except:
-            return False
-    return False
+    if not os.path.exists(LICENCE_FILE):
+        return False
+    try:
+        with open(LICENCE_FILE, "r") as f:
+            data = json.load(f)
+            if not data.get("active", False):
+                return False
+            # Verrouillage : Si c'est une clé CLIENT et machine_id différent = bloqué
+            if data.get("type") == "CLIENT" and "machine_id" in data:
+                if data["machine_id"] != get_machine_id():
+                    return False
+            return True
+    except:
+        return False
 
 def load_keys():
     if not os.path.exists(KEYS_FILE):
@@ -48,27 +56,18 @@ def save_json(path, data):
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 def FORCE_RESET():
-    for fichier in [STOCK_FILE, CAISSE_FILE, "factures.json", "inventaire_historique.json", "historique_ventes.xlsx", "caisse_audit.log"]:
-        if os.path.exists(fichier):
-            try:
-                os.remove(fichier)
-            except:
-                pass
-    for key in list(st.session_state.keys()):
-        if key != "licence_active":
-            try:
-                del st.session_state[key]
-            except:
-                pass
-    df_vide = pd.DataFrame(columns=["IMEI","Modèle","Marque","Prix Achat (FCFA)","Prix de vente (FCFA)","👤 Manager / Vendeur","📦 Statut","💰 Profit"])
-    df_vide.to_excel(STOCK_FILE, index=False)
-    with open(CAISSE_FILE, "w", encoding="utf-8") as f:
-        json.dump({}, f)
+    try:
+        df_vide = pd.DataFrame(columns=["IMEI","Modèle","Marque","Prix Achat"])
+        df_vide.to_excel(STOCK_FILE, index=False)
+        with open(CAISSE_FILE, "w", encoding="utf-8") as f:
+            json.dump({}, f)
+    except:
+        pass
 
 # --- EN-TETE ---
 st.markdown("""
-<div style="background: linear-gradient(90deg, #06B6D4, #0E7490); padding:18px 28px; border-radius:14px; margin-bottom:20px;">
-<h1 style="margin:0; color:white; font-size:24px;">📱 ENAM PHONE PRO</h1>
+<div style="background: linear-gradient(90deg, #0B6BD4, #0E7490); padding:20px; border-radius:12px">
+<h1 style="margin:0; color:white; font-size:24px;"> ENAM PHONE PRO</h1>
 <p style="margin:0; color:#E0F2FE;">Centre d'Activation</p>
 </div>
 """, unsafe_allow_html=True)
@@ -76,11 +75,13 @@ st.markdown("""
 tab1, tab2 = st.tabs(["🔑 1. Activation Licence", "👥 2. Codes Managers"])
 
 with tab1:
-    st.markdown("## 🔑 Activation de votre licence")
+    st.markdown("## 🔍 Activation de votre licence")
     st.info("Entrez la clé reçue après paiement")
+
     if is_activated():
         st.success("✅ Licence activée - Votre espace est vide")
-        st.write("Commencez par **Ajout au stock** pour remplir votre tableau.")
+        st.write(f"PC ID: `{get_machine_id()}`")
+        st.write("Commencez par **Ajout au stock** pour remplir votre boutique")
         if st.button("Se déconnecter / Changer de clé"):
             if os.path.exists(LICENCE_FILE):
                 os.remove(LICENCE_FILE)
@@ -89,15 +90,17 @@ with tab1:
         cle = st.text_input("Collez votre clé ici", placeholder="ENAM-XXXX-XXXX")
         if st.button("Activer maintenant", type="primary", use_container_width=True):
             cle_clean = cle.strip().upper()
-            # 1. Si c'est une clé MASTER (toi) -> réutilisable à l'infini
+
+            # 1. Clé MASTER (toi) -> réutilisable à l'infini
             if cle_clean in MASTER_KEYS:
                 with open(LICENCE_FILE, "w") as f:
-                    json.dump({"active": True, "key": cle_clean, "type": "MASTER"}, f)
+                    json.dump({"active": True, "key": cle_clean, "type": "MASTER", "machine_id": get_machine_id(), "activated_at": str(datetime.now())}, f)
                 FORCE_RESET()
-                st.success("✅ Clé MASTER activée (réutilisable) - Dashboard vide prêt")
+                st.success("✅ Clé MASTER activée (réutilisable) - Dashboard débloqué")
                 st.balloons()
                 st.rerun()
-            # 2. Si c'est une clé client à usage unique
+
+            # 2. Clé client à usage unique
             else:
                 all_keys = load_keys()
                 if cle_clean in all_keys:
@@ -106,39 +109,40 @@ with tab1:
                     else:
                         all_keys[cle_clean]["used"] = True
                         all_keys[cle_clean]["used_at"] = str(pd.Timestamp.now())
+                        all_keys[cle_clean]["machine_id"] = get_machine_id()
                         save_keys(all_keys)
+
                         with open(LICENCE_FILE, "w") as f:
-                            json.dump({"active": True, "key": cle_clean, "type": "CLIENT"}, f)
+                            json.dump({"active": True, "key": cle_clean, "type": "CLIENT", "machine_id": get_machine_id(), "activated_at": str(datetime.now())}, f)
                         FORCE_RESET()
-                        st.success("✅ Licence activée ! Votre espace est vide, commencez par Ajout au stock.")
+                        st.success("✅ Licence activée - Bloquée sur ce PC")
                         st.balloons()
                         st.rerun()
                 else:
-                    st.error("❌ Clé invalide. Vérifiez ou contactez le vendeur.")
+                    st.error("❌ Clé invalide. Vérifiez ou contactez le support")
 
 with tab2:
     if not is_activated():
-        st.error("⛔ Tu dois d'abord activer ta licence dans l'onglet 1")
+        st.error("🔒 Tu dois d'abord activer ta licence dans l'onglet 1")
         st.stop()
-    
+
     st.markdown("### Générer un code pour chaque vendeur")
-    st.caption("Ce code sera obligatoire pour débloquer Confirmer Vente dans Vendre Téléphone")
-    
+    st.caption("Ce code sera obligatoire pour débloquer Confirmer Vente")
+
     codes = load_json(CODE_FILE, {})
-    
     col1, col2 = st.columns([2,1])
     with col1:
-        manager_name = st.text_input("Nom du vendeur", placeholder="Ex: Paul", key="mgr_name")
+        manager_name = st.text_input("Nom du vendeur", placeholder="Ex: Enam")
     with col2:
         st.write("")
         st.write("")
-        if st.button("🔑 Générer", type="primary", use_container_width=True):
+        if st.button("🔍 Générer", type="primary", use_container_width=True):
             if not manager_name.strip():
                 st.error("Entre un nom")
             else:
-                new_code = "MGR-" + "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
+                new_code = "MGR-" + "".join(random.choices(string.ascii_uppercase + string.digits, k=4))
                 while new_code in codes:
-                    new_code = "MGR-" + "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
+                    new_code = "MGR-" + "".join(random.choices(string.ascii_uppercase + string.digits, k=4))
                 codes[new_code] = {
                     "manager": manager_name.strip(),
                     "created": datetime.now().strftime("%d/%m/%Y %H:%M"),
@@ -154,7 +158,7 @@ with tab2:
         for code, info in list(codes.items()):
             a,b,c,d = st.columns([2,2,1,1])
             with a: st.markdown(f"**{code}**")
-            with b: st.write(f"👤 {info['manager']} - {info['created']}")
+            with b: st.write(f"{info['manager']} - {info['created']}")
             with c: st.write(f"{info['uses']} ventes")
             with d:
                 if st.button("❌", key=f"del_{code}"):
