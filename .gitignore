@@ -9,3 +9,5 @@ images_phones/*
 __pycache__/
 *.pyc
 .venv/
+generateur_cles.py
+licence.json
