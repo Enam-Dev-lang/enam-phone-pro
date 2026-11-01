@@ -1,3 +1,6 @@
+import os
+os.makedirs("images_phones", exist_ok=True)
+
 import streamlit as st, os, json
 
 st.set_page_config(page_title="eppro", page_icon="📱", layout="wide")
