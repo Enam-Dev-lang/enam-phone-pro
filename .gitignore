@@ -1,0 +1,12 @@
+﻿admin_secret.py
+cles_valides.json
+keys_database.json
+shop_config.json
+inventaire_historique.json
+stock.xlsx
+images_phones/*
+!images_phones/.gitkeep
+__pycache__/
+*.pyc
+.venv/
+Logo.png
